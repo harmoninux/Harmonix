@@ -30,4 +30,4 @@ all: download/qemu
 
 download/qemu:
 	mkdir -p download
-	cd download && git clone -b termony-qemu-10-vroot --depth=100 https://github.com/hackeris/harmony-qemu qemu
+	cd download && git clone -b termony-qemu-10-vroot --depth=100 https://github.com/harmoninux/qemu qemu
