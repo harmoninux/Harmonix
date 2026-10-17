@@ -139,7 +139,7 @@ place_fail=0
 host_leak=0
 placement_report=""
 host_report=""
-for f in rt_xattr rt_fifo rt_time; do
+for f in rt_xattr rt_fifo rt_time rt_own rt_mode rt_dir rt_ut; do
     if [[ -e "$ROOTFS_ABS/tmp/$f" ]]; then
         placement_report+="${f}=present "
     else

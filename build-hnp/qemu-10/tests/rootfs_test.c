@@ -21,6 +21,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <time.h>
+#include <sys/time.h>
 #include <limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -217,6 +218,79 @@ static void check_chown_path(void)
         return;
     }
     report("chown_path", 0, "chown failed (path not relocated?)");
+}
+
+/* chmod() must operate on the guest path (legacy syscall on x86_64). */
+static void check_chmod_path(void)
+{
+    struct stat st;
+    int fd;
+
+    unlink_quiet("/tmp/rt_mode");
+    fd = open("/tmp/rt_mode", O_CREAT | O_RDWR, 0644);
+    if (fd < 0) {
+        report("chmod_path", 0, "create failed");
+        return;
+    }
+    close(fd);
+
+    if (chmod("/tmp/rt_mode", 0640) != 0) {
+        report("chmod_path", 0, "chmod failed");
+        return;
+    }
+    if (stat("/tmp/rt_mode", &st) != 0) {
+        report("chmod_path", 0, "stat failed");
+        return;
+    }
+    report("chmod_path", (st.st_mode & 0777) == 0640, "mode mismatch");
+}
+
+/* mkdir() must operate on the guest path (legacy syscall on x86_64). */
+static void check_mkdir_path(void)
+{
+    struct stat st;
+
+    (void)rmdir("/tmp/rt_dir");
+    if (mkdir("/tmp/rt_dir", 0755) != 0) {
+        report("mkdir_path", 0, "mkdir failed");
+        return;
+    }
+    if (stat("/tmp/rt_dir", &st) != 0) {
+        report("mkdir_path", 0, "stat failed");
+        return;
+    }
+    report("mkdir_path", S_ISDIR(st.st_mode), "not a directory");
+}
+
+/* utimes() must operate on the guest path (legacy syscall on x86_64). */
+static void check_utimes_path(void)
+{
+    struct timeval tv[2];
+    struct stat st;
+    int fd;
+
+    unlink_quiet("/tmp/rt_ut");
+    fd = open("/tmp/rt_ut", O_CREAT | O_RDWR, 0644);
+    if (fd < 0) {
+        report("utimes_path", 0, "create failed");
+        return;
+    }
+    close(fd);
+
+    tv[0].tv_sec = 1111111111;
+    tv[0].tv_usec = 0;
+    tv[1].tv_sec = 1111111111;
+    tv[1].tv_usec = 0;
+    if (utimes("/tmp/rt_ut", tv) != 0) {
+        report("utimes_path", 0, "utimes failed");
+        return;
+    }
+    if (stat("/tmp/rt_ut", &st) != 0) {
+        report("utimes_path", 0, "stat failed");
+        return;
+    }
+    report("utimes_path", st.st_mtim.tv_sec == 1111111111,
+           "st_mtim.tv_sec mismatch");
 }
 
 static void check_hardlink(void)
@@ -509,6 +583,9 @@ int main(void)
     check_utimensat_mtime();
     check_mknodat_fifo();
     check_chown_path();
+    check_chmod_path();
+    check_mkdir_path();
+    check_utimes_path();
     check_hardlink();
     check_rename_symlink();
     check_symlink_abs_no_escape();

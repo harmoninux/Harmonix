@@ -59,6 +59,10 @@ The emulator is invoked as:
 | `xattr_roundtrip` | `setxattr`/`getxattr`/`removexattr` on `user.rt` round-trips |
 | `utimensat_mtime` | `utimensat` with `{1234567890,0}` twice sets `st_mtim.tv_sec` |
 | `mknodat_fifo` | `mknodat(...S_IFIFO...)` creates a FIFO |
+| `chown_path` | `chown("/tmp/rt_own", ...)` reaches the guest path (success or `EPERM`), not a host-path `ENOENT` |
+| `chmod_path` | `chmod("/tmp/rt_mode", 0640)` yields `(st_mode & 0777) == 0640` |
+| `mkdir_path` | `mkdir("/tmp/rt_dir", 0755)` yields a directory |
+| `utimes_path` | `utimes("/tmp/rt_ut", ...)` sets `st_mtim.tv_sec == 1111111111` |
 | `hardlink` | `linkat` yields same inode and `nlink == 2` (under `--force-eacces`: copy fallback preserves contents) |
 | `rename_symlink` | symlink survives `renameat` and target resolves to `/etc` |
 | `symlink_abs_no_escape` | `symlink("/etc", p)` keeps host target inside the rootfs and `readlink(p)` returns exactly `/etc` |
@@ -80,8 +84,8 @@ going through the explicit `/mnt/host-root` mapping.
 ## Placement check
 
 After the run the runner verifies that the files created by the test landed
-inside the guest rootfs (`$rootfs/tmp/rt_xattr`, `rt_fifo`, `rt_time`) and did
-**not** leak to the host `/tmp/`.
+inside the guest rootfs (`$rootfs/tmp/rt_xattr`, `rt_fifo`, `rt_time`, `rt_own`,
+`rt_mode`, `rt_dir`, `rt_ut`) and did **not** leak to the host `/tmp/`.
 
 ## `QEMU_VROOT_FORCE_EACCES`
 
