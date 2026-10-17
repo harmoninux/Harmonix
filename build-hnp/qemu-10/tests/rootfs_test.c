@@ -192,6 +192,33 @@ static void check_mknodat_fifo(void)
     report("mknodat_fifo", S_ISFIFO(st.st_mode), "not a FIFO");
 }
 
+/* chown() must operate on the guest path; an unrelocated path yields ENOENT. */
+static void check_chown_path(void)
+{
+    int fd, rc;
+
+    unlink_quiet("/tmp/rt_own");
+    fd = open("/tmp/rt_own", O_CREAT | O_RDWR, 0644);
+    if (fd < 0) {
+        report("chown_path", 0, "create failed");
+        return;
+    }
+    close(fd);
+
+    errno = 0;
+    rc = chown("/tmp/rt_own", 1234, 5678);
+    if (rc == 0) {
+        report("chown_path", 1, NULL);
+        return;
+    }
+    /* Non-root: EPERM means the real syscall was reached on the guest path. */
+    if (errno == EPERM) {
+        report("chown_path", 1, NULL);
+        return;
+    }
+    report("chown_path", 0, "chown failed (path not relocated?)");
+}
+
 static void check_hardlink(void)
 {
     struct stat sa, sb;
@@ -481,6 +508,7 @@ int main(void)
     check_xattr_roundtrip();
     check_utimensat_mtime();
     check_mknodat_fifo();
+    check_chown_path();
     check_hardlink();
     check_rename_symlink();
     check_symlink_abs_no_escape();
