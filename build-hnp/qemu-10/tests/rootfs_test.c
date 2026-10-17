@@ -445,6 +445,30 @@ static void check_mq_open(void)
 #endif
 }
 
+static void check_long_path_bounded(void)
+{
+    char path[PATH_MAX + 64];
+    size_t i;
+
+    /* An absolute path strictly longer than PATH_MAX. */
+    path[0] = '/';
+    for (i = 1; i < sizeof(path) - 1; i++) {
+        path[i] = 'a';
+    }
+    path[sizeof(path) - 1] = '\0';
+
+    errno = 0;
+    if (chdir(path) != -1) {
+        report("long_path_bounded", 0, "chdir(long path) unexpectedly succeeded");
+        return;
+    }
+    if (errno != ENAMETOOLONG) {
+        report("long_path_bounded", 0, "chdir(long path) errno != ENAMETOOLONG");
+        return;
+    }
+    report("long_path_bounded", 1, NULL);
+}
+
 int main(void)
 {
     const char *force = getenv("QEMU_VROOT_FORCE_EACCES");
@@ -463,6 +487,7 @@ int main(void)
     check_openat2_open();
     check_sigblock_works();
     check_mq_open();
+    check_long_path_bounded();
 
     printf("TOTAL_FAILURES=%d\n", g_fail);
     return g_fail ? 1 : 0;

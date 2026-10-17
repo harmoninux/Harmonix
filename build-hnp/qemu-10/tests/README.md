@@ -65,6 +65,7 @@ The emulator is invoked as:
 | `openat2_open` | `openat2` opens `/etc/passwd` (or `/etc/hostname`) |
 | `sigblock_works` | `SIG_BLOCK` defers `SIGUSR1`; `SIG_UNBLOCK` delivers it |
 | `mq_open` | raw `mq_open` returns `-1`/`ENOSYS` (documents current behavior) |
+| `long_path_bounded` | `chdir()` with a path longer than `PATH_MAX` fails with `errno == ENAMETOOLONG` instead of overflowing the vroot relocation buffer or crashing |
 
 ## Enforced invariant
 
